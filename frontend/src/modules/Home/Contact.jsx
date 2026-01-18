@@ -1,8 +1,43 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Button from '../../components/ui/Button';
 import './Contact.scss';
 
 const Contact = () => {
+    const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+    const [status, setStatus] = useState('idle');
+
+    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setStatus('sending');
+
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const response = await fetch(`${apiUrl}/api/send-email`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: formData.name,
+                    email: formData.email,
+                    details: formData.message,
+                    subject: 'Contact Form Inquiry'
+                }),
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                setStatus('success');
+                setFormData({ name: '', email: '', message: '' });
+                setTimeout(() => setStatus('idle'), 3000);
+            } else {
+                setStatus('error');
+            }
+        } catch (error) {
+            setStatus('error');
+        }
+    };
+
     return (
         <footer id="about" className="contact-footer">
             <div className="container">
@@ -25,27 +60,38 @@ const Contact = () => {
                     </div>
 
                     <div className="contact-form-wrapper">
-                        <form className="mini-form">
-                            <div className="mf-row">
-                                <div className="mf-group">
-                                    <label>FULL NAME</label>
-                                    <input type="text" placeholder="John Doe" />
+                        {status === 'success' ? (
+                            <div style={{ textAlign: 'center', color: '#fff', padding: '2rem' }}>
+                                <h3 style={{ color: '#3B82F6', marginBottom: '1rem' }}>Message Sent!</h3>
+                                <p>Thank you for reaching out.</p>
+                            </div>
+                        ) : (
+                            <form className="mini-form" onSubmit={handleSubmit}>
+                                <div className="mf-row">
+                                    <div className="mf-group">
+                                        <label>FULL NAME</label>
+                                        <input name="name" type="text" placeholder="John Doe" value={formData.name} onChange={handleChange} required />
+                                    </div>
+                                    <div className="mf-group">
+                                        <label>COMPANY</label>
+                                        <input type="text" placeholder="Inc." />
+                                    </div>
                                 </div>
                                 <div className="mf-group">
-                                    <label>COMPANY</label>
-                                    <input type="text" placeholder="Inc." />
+                                    <label>YOUR INTEREST</label>
+                                    <input type="text" placeholder="Web Development" />
                                 </div>
-                            </div>
-                            <div className="mf-group">
-                                <label>YOUR INTEREST</label>
-                                <input type="text" placeholder="Web Development" />
-                            </div>
-                            <div className="mf-group">
-                                <label>MESSAGE</label>
-                                <textarea placeholder="Tell us about your project..."></textarea>
-                            </div>
-                            <Button variant="primary" style={{ width: '100%' }}>Send Message</Button>
-                        </form>
+                                <div className="mf-group">
+                                    <label>MESSAGE</label>
+                                    <textarea name="message" placeholder="Tell us about your project..." value={formData.message} onChange={handleChange} required></textarea>
+                                </div>
+                                <div style={{ marginTop: '1.5rem' }}>
+                                    <Button variant="primary" style={{ width: '100%' }} disabled={status === 'sending'}>
+                                        {status === 'sending' ? 'Sending...' : 'Send Message'}
+                                    </Button>
+                                </div>
+                            </form>
+                        )}
                     </div>
                 </div>
 
